@@ -1,0 +1,48 @@
+@echo off
+setlocal enabledelayedexpansion
+
+:: Zmienna bazowa dla głównej ścieżki
+set "baseDir=C:\sciezka\do\bazowego\katalogu"
+
+:: Zmienna z nazwą nowego brancha
+set "newBranchName=nowy-branch"
+
+:: Plik z nazwami katalogów
+set "katalogiFile=C:\sciezka\do\katalogi.txt"
+
+:: Sprawdzenie, czy plik istnieje
+if not exist "%katalogiFile%" (
+    echo Plik z katalogami nie istnieje: %katalogiFile%
+    exit /b 1
+)
+
+:: Przetwarzanie katalogów
+for /f "tokens=*" %%k in (%katalogiFile%) do (
+    set "fullPath=%baseDir%\%%k"
+    if exist "!fullPath!" (
+        cd /d "!fullPath!"
+        if exist ".git" (
+            echo Przełączam branch na 'dev' w katalogu "!fullPath!"
+            git checkout dev
+            if not errorlevel 1 (
+                echo Pobieram najnowsze zmiany dla brancha 'dev' w katalogu "!fullPath!"
+                git pull origin dev
+                if not errorlevel 1 (
+                    echo Tworzę nowy branch '%newBranchName%' w katalogu "!fullPath!"
+                    git checkout -b %newBranchName%
+                ) else (
+                    echo Nie udało się pobrać najnowszych zmian dla brancha 'dev' w katalogu "!fullPath!"
+                )
+            ) else (
+                echo Nie udało się przełączyć brancha na 'dev' w katalogu "!fullPath!"
+            )
+        ) else (
+            echo Katalog "!fullPath!" nie jest repozytorium Git
+        )
+    ) else (
+        echo Katalog "!fullPath!" nie istnieje
+    )
+)
+
+:: Powrót do początkowego katalogu
+cd /d %~dp0
